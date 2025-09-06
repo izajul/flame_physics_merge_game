@@ -7,7 +7,9 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flame_kenney_xml/flame_kenney_xml.dart';
 import 'package:flame_physics/components/player.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'brick.dart';
+import 'enemy.dart';
 import 'ground.dart';
 import 'background.dart';
 
@@ -47,7 +49,7 @@ class MyPhysicsGame extends Forge2DGame with TapDetector {
     await world.add(Background(sprite: Sprite(backgroundImage)));
 
     await addGround();
-    unawaited(addBricksRandoms());
+    unawaited(addBricksRandoms().then((_) => addEnemies()));
 
     await addPlayer();
 
@@ -57,7 +59,9 @@ class MyPhysicsGame extends Forge2DGame with TapDetector {
   @override
   void onTapDown(TapDownInfo info) {
     final worldPosition = camera.globalToLocal(info.eventPosition.global);
-    print('Tap down at: ${info.eventPosition.global}, ${info.eventPosition.widget}, worldPosition $worldPosition');
+    print(
+      'Tap down at: ${info.eventPosition.global}, ${info.eventPosition.widget}, worldPosition $worldPosition',
+    );
 
     // addBricksByPress(worldPosition);
   }
@@ -122,13 +126,14 @@ class MyPhysicsGame extends Forge2DGame with TapDetector {
           ).map((key, filename) => MapEntry(key, elements.getSprite(filename))),
         ),
       );
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
     }
   }
 
-  Future<void> addPlayer() async => world.add(             // Add from here...
+  Future<void> addPlayer() async => world.add(
+    // Add from here...
     Player(
-      Vector2(camera.visibleWorldRect.left * 2 / 3, 0),
+      Vector2(camera.visibleWorldRect.left * 2 / 3, -10),
       aliens.getSprite(PlayerColor.randomColor.fileName),
     ),
   );
@@ -136,8 +141,50 @@ class MyPhysicsGame extends Forge2DGame with TapDetector {
   @override
   void update(double dt) {
     super.update(dt);
-    if (isMounted && world.children.whereType<Player>().isEmpty) {
+    if (isMounted && // Modify from here...
+        world.children.whereType<Player>().isEmpty &&
+        world.children.whereType<Enemy>().isNotEmpty) {
       addPlayer();
     }
+    if (isMounted &&
+        enemiesFullyAdded &&
+        world.children.whereType<Enemy>().isEmpty &&
+        world.children.whereType<TextComponent>().isEmpty) {
+      world.addAll(
+        [
+          (position: Vector2(0.5,-9.5), color: Colors.white),
+          (position: Vector2(0, -10), color: Colors.orangeAccent),
+        ].map(
+          (e) => TextComponent(
+            text: 'You win!',
+            anchor: Anchor.center,
+            position: e.position,
+            textRenderer: TextPaint(
+              style: TextStyle(color: e.color, fontSize: 16),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  var enemiesFullyAdded = false;
+
+  Future<void> addEnemies() async {
+    await Future<void>.delayed(const Duration(seconds: 2));
+    for (var i = 0; i < 3; i++) {
+      await world.add(
+        Enemy(
+          Vector2(
+            camera.visibleWorldRect.right / 3 +
+                (_random.nextDouble() * 7 - 3.5),
+            (_random.nextDouble() * 3),
+          ),
+          aliens.getSprite(EnemyColor.randomColor.fileName),
+        ),
+      );
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+    enemiesFullyAdded = true; // To here.
   }
 }

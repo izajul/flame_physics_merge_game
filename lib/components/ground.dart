@@ -1,9 +1,10 @@
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
+import 'package:flame_physics/components/body_component_with_user_data.dart';
 
 const groundSize = 7.0;
 
-class Ground extends BodyComponent {
+class Ground extends BodyComponentWithUserData {
   Ground(Vector2 position, Sprite sprite)
       : super(
     renderBody: false,
