@@ -1,9 +1,9 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-
-import 'components/game.dart';
+import 'merge_game.dart';
 
 void main() {
-  runApp(GameWidget.controlled(gameFactory: MyPhysicsGame.new));
+  runApp(GameWidget<MergeGame>.controlled(gameFactory: MergeGame.new));
+  // runApp(GameWidget.controlled(gameFactory: MyPhysicsGame.new));
 
 }
