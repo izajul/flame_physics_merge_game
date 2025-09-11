@@ -68,11 +68,11 @@ class MergeGame extends Forge2DGame with TapDetector {
 
   Future<void> addBricksByPress(Vector2 position) async {
 
-    final _color = DropperItemColor.randomColor;
-    final _sprite = aliens.getSprite(_color.fileName);
+    final _fruit = FruitItem.randomItem;
+    final _sprite = await Sprite.load(_fruit.fileName);
 
     await world.add(
-        DropperItem(position, _sprite, color: _color)
+        DropperItem(position, _sprite, fruit: _fruit)
     );
   }
 
@@ -118,15 +118,16 @@ class MergeGame extends Forge2DGame with TapDetector {
   }
 
   bool isAdding = false;
-  Future<void> mergeToNewOne(Vector2 collisionPosition) async {
+  Future<void> mergeToNewOne(Vector2 collisionPosition, int fruitNumber) async {
     if (isAdding) return;
     isAdding = true;
     print("adding at $collisionPosition");
     await Future.delayed(const Duration(microseconds: 100 ));
-    final _color = DropperItemColor.randomColor;
-    final _sprite = aliens.getSprite(_color.fileName);
+    final _fruit = FruitItem.getByNumber(fruitNumber+1);
+    // final _sprite = aliens.getSprite(_fruit.fileName);
+    final _sprite = await Sprite.load(_fruit.fileName);
     await world.add(
-        DropperItem(collisionPosition, _sprite, color: _color)
+        DropperItem(collisionPosition, _sprite, fruit: _fruit)
     );
     isAdding = false;
   }
