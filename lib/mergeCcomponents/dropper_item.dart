@@ -6,22 +6,23 @@ import 'package:flame_physics/mergeCcomponents/body_with_data_component.dart';
 import 'package:flame_physics/merge_game.dart';
 
 enum FruitItem {
-  item_1(itemSize: 2.0, fruitNumber: 1),
-  item_2(itemSize: 2.5, fruitNumber: 2),
-  item_3(itemSize: 3.0, fruitNumber: 3),
-  item_4(itemSize: 3.5, fruitNumber: 4),
-  item_5(itemSize: 4.0, fruitNumber: 5),
-  item_6(itemSize: 4.5, fruitNumber: 6),
-  item_7(itemSize: 5.0, fruitNumber: 7),
-  item_8(itemSize: 5.5, fruitNumber: 8),
-  item_9(itemSize: 6.0, fruitNumber: 9),
-  item_10(itemSize: 6.5, fruitNumber: 10),
-  item_11(itemSize: 7.0, fruitNumber: 11),
-  item_12(itemSize: 7.5, fruitNumber: 12),
-  item_13(itemSize: 8.0, fruitNumber: 13),
-  item_14(itemSize: 8.5, fruitNumber: 14),
-  item_15(itemSize: 9.0, fruitNumber: 15),
-  item_16(itemSize: 9.5, fruitNumber: 16);
+  item_1(itemSize: 2.3, fruitNumber: 1),
+  item_2(itemSize: 3.0, fruitNumber: 2),
+  item_3(itemSize: 3.7, fruitNumber: 3),
+  item_4(itemSize: 4.4, fruitNumber: 4),
+  item_5(itemSize: 5.1, fruitNumber: 5),
+  item_6(itemSize: 5.8, fruitNumber: 6),
+  item_7(itemSize: 6.5, fruitNumber: 7),
+  item_8(itemSize: 7.2, fruitNumber: 8),
+  item_9(itemSize: 7.9, fruitNumber: 9),
+  item_10(itemSize: 8.6, fruitNumber: 10),
+  item_11(itemSize: 9.3, fruitNumber: 11),
+  item_12(itemSize: 10.0, fruitNumber: 12),
+  item_13(itemSize: 10.7, fruitNumber: 13),
+  item_14(itemSize: 11.4, fruitNumber: 14),
+  item_15(itemSize: 12.1, fruitNumber: 15),
+  item_16(itemSize: 12.8, fruitNumber: 16),
+  ;
 
   final double itemSize;
   final int fruitNumber;
@@ -55,14 +56,16 @@ class DropperItem extends BodyWithDataComponent<MergeGame>
         bodyDef: BodyDef()
           ..position = position
           ..type = BodyType.dynamic
-          ..angularDamping = 0.9
-          ..linearDamping = 0.9
-          ..gravityOverride = Vector2(0, 150),
+          ..angularDamping = 2
+          ..linearDamping = 2
+          // ..gravityOverride = Vector2(0, 120)
+    ,
         fixtureDefs: [
           FixtureDef(CircleShape()..radius = fruit.itemSize / 2)
-            ..restitution = 0.8
-            ..density = 0.85
-            ..friction = 0.9,
+          /// elasticity
+            ..restitution = 0.3
+            ..density = 1
+            ..friction = 1,
         ],
         children: [
           SpriteComponent(
