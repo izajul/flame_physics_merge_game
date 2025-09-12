@@ -44,7 +44,7 @@ enum FruitItem {
   }
 
   // get random item, the random max item will be first 6 item only
-  static FruitItem get randomItem => FruitItem.values[Random().nextInt(6)];
+  static FruitItem get randomItem => FruitItem.values[Random().nextInt(6)  ];
 }
 
 class DropperItem extends BodyWithDataComponent<MergeGame>
@@ -58,6 +58,7 @@ class DropperItem extends BodyWithDataComponent<MergeGame>
           ..type = BodyType.dynamic
           ..angularDamping = 2
           ..linearDamping = 2
+    ..linearVelocity = Vector2(0, 50)
           // ..gravityOverride = Vector2(0, 120)
     ,
         fixtureDefs: [

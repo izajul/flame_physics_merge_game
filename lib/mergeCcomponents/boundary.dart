@@ -32,11 +32,11 @@ class Boundary extends BodyComponent {
 
 
 class Bucket extends BodyComponent {
-  static const double wallWidth = 0.5;
-  static const double bucketHeight = 40;
-  static const double bucketWidth = 30;
+  static const double wallWidth = 0.3;
+  static const double bucketHeight = 30;
+  static const double bucketWidth = 25;
 
-  final Paint wallPaint = Paint()..color = Colors.brown.shade400;
+  final Paint wallPaint = Paint()..color = Colors.orange.shade400;
 
   @override
   Body createBody() {
@@ -54,7 +54,7 @@ class Bucket extends BodyComponent {
 
     // Create the bottom wall
     final bottomWallShape = PolygonShape()
-      ..setAsBox(bucketWidth / 2 + wallWidth, wallWidth, Vector2(0, bucketHeight), 0);
+      ..setAsBox(bucketWidth / 2 , wallWidth, Vector2(0, bucketHeight), 0);
     body.createFixture(FixtureDef(bottomWallShape)
       ..density = 100
         ..friction=1
@@ -95,5 +95,14 @@ class Bucket extends BodyComponent {
       final path = Path()..addPolygon(vertices.map((v) => Offset(v.x, v.y)).toList(), true);
       canvas.drawPath(path, wallPaint);
     }
+
+    // Render the two rounded corners
+
+    canvas.drawCircle(Offset(-bucketWidth / 2, bucketHeight),wallWidth, wallPaint);
+    canvas.drawCircle(Offset(bucketWidth / 2, bucketHeight),wallWidth, wallPaint);
+
+    final _paint = Paint()..color = Colors.green;
+    canvas.drawCircle(Offset(-bucketWidth / 2, 0),wallWidth, wallPaint);
+    canvas.drawCircle(Offset(bucketWidth / 2, 0),wallWidth, wallPaint);
   }
 }

@@ -17,8 +17,8 @@ import 'components/ground.dart';
 class MergeGame extends Forge2DGame with TapDetector {
   MergeGame()
     : super(
-        gravity: Vector2(0, 50),
-        camera: CameraComponent.withFixedResolution(width: 400, height: 532),
+        gravity: Vector2(0, 30),
+        camera: CameraComponent.withFixedResolution(width: 300, height: 400),
       );
 
   @override
