@@ -21,8 +21,7 @@ enum FruitItem {
   item_13(itemSize: 10.7, fruitNumber: 13),
   item_14(itemSize: 11.4, fruitNumber: 14),
   item_15(itemSize: 12.1, fruitNumber: 15),
-  item_16(itemSize: 12.8, fruitNumber: 16),
-  ;
+  item_16(itemSize: 12.8, fruitNumber: 16);
 
   final double itemSize;
   final int fruitNumber;
@@ -44,54 +43,58 @@ enum FruitItem {
   }
 
   // get random item, the random max item will be first 6 item only
-  static FruitItem get randomItem => FruitItem.values[Random().nextInt(6)  ];
+  static FruitItem get randomItem => FruitItem.values[Random().nextInt(6)];
 }
 
 class DropperItem extends BodyWithDataComponent<MergeGame>
     with ContactCallbacks {
-  DropperItem(Vector2 position, Sprite sprite, {required FruitItem fruit})
-    : super(
-        renderBody: false,
-        extraData: fruit,
-        bodyDef: BodyDef()
-          ..position = position
-          ..type = BodyType.dynamic
-          ..angularDamping = 2
-          ..linearDamping = 2
-    ..linearVelocity = Vector2(0, 50)
-          // ..gravityOverride = Vector2(0, 120)
-    ,
-        fixtureDefs: [
-          FixtureDef(CircleShape()..radius = fruit.itemSize / 2)
-          /// elasticity
-            ..restitution = 0.3
-            ..density = 1
-            ..friction = 1,
-        ],
-        children: [
-          SpriteComponent(
-            anchor: Anchor.center,
-            sprite: sprite,
-            size: Vector2.all(fruit.itemSize),
-            position: Vector2(0, 0),
-          ),
-        ],
-      );
+  DropperItem(
+    Vector2 position,
+    Sprite sprite, {
+    required FruitItem fruit,
+    super.key,
+    bodyType = BodyType.static,
+  }) : super(
+         renderBody: false,
+         extraData: fruit,
+         bodyDef: BodyDef()
+           ..position = position
+           ..type = bodyType
+           ..angularDamping = 2
+           ..linearDamping = 2
+           ..linearVelocity = Vector2(0, 50),
+         // ..gravityOverride = Vector2(0, 120)
+         fixtureDefs: [
+           FixtureDef(CircleShape()..radius = fruit.itemSize / 2)
+             /// elasticity
+             ..restitution = 0.2
+             ..density = 1
+             ..friction = 1,
+         ],
+         children: [
+           SpriteComponent(
+             anchor: Anchor.center,
+             sprite: sprite,
+             size: Vector2.all(fruit.itemSize),
+             position: Vector2(0, 0),
+           ),
+         ],
+       );
 
-  // final Sprite _sprite;
+  double get radius => (extraData as FruitItem).itemSize / 2;
 
-  @override
-  void update(double dt) {
-    super.update(dt);
+  /// If you still want to flip a preview piece to dynamic at drop time:
+  Future<void> toDynamic() async {
+    if (body.bodyType == BodyType.dynamic) return;
+    body.linearVelocity = Vector2.zero(); // IMPORTANT: clear stale velocities
+    body.angularVelocity = 0;
+    body.setType(BodyType.dynamic);
+    body.setAwake(true);
+  }
 
-    if (!body.isAwake) {
-      // removeFromParent();
-    }
-
-    if (position.x > camera.visibleWorldRect.right + 10 ||
-        position.x < camera.visibleWorldRect.left - 10) {
-      // removeFromParent();
-    }
+  void moveHorizontallyTo(double x) {
+    final p = body.position;
+    body.setTransform(Vector2(x, p.y), 0);
   }
 
   @override
@@ -108,7 +111,10 @@ class DropperItem extends BodyWithDataComponent<MergeGame>
       final fruit1 = item1.extraData as FruitItem;
       final fruit2 = item2.extraData as FruitItem;
 
-      if (fruit1 == fruit2) {
+      if (fruit1 == fruit2 &&
+          bodyA.bodyType == BodyType.dynamic &&
+          bodyB.bodyType == BodyType.dynamic) {
+
         final collisionPosition = (bodyA.position + bodyB.position) / 2;
         game.mergeToNewOne(collisionPosition, fruit1.fruitNumber);
         removeFromParent();

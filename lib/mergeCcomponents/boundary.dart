@@ -1,35 +1,5 @@
-import 'dart:ui';
-
-import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
-
-class Boundary extends BodyComponent {
-  Boundary(Vector2 position, )
-    : super(
-        renderBody: false,
-        bodyDef: BodyDef()
-          ..position = position
-          ..type = BodyType.static,
-        fixtureDefs: [
-          FixtureDef(PolygonShape()..setAsBoxXY(1, 6.44), friction: 0.3),
-        ],
-      );
-  @override
-  Future<void> onLoad() async {
-    await add(
-        RectangleComponent(
-          anchor: Anchor.bottomCenter,
-          size: Vector2(3,60),
-          position: Vector2(-30, 30),
-          paint: Paint()..color = Colors.brown,
-        )
-    );
-
-    return super.onLoad();
-  }
-}
-
 
 class Bucket extends BodyComponent {
   static const double wallWidth = 0.3;
