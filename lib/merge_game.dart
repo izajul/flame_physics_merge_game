@@ -1,19 +1,10 @@
 import 'dart:async';
-import 'dart:ui';
-
-import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
-import 'package:flame_kenney_xml/flame_kenney_xml.dart';
 import 'package:flame_physics/mergeCcomponents/dropper_item.dart';
 import 'package:flame_physics/mergeCcomponents/boundary.dart';
 import 'package:flutter/material.dart';
-
-import 'components/background.dart';
-import 'components/brick.dart';
-import 'components/ground.dart';
-
 class MergeGame extends Forge2DGame with DragCallbacks {
   MergeGame()
     : super(
@@ -52,22 +43,6 @@ class MergeGame extends Forge2DGame with DragCallbacks {
   double? _dragPreviewX; // world-space X we control during a drag
 
   @override
-  void _onDragStart(DragStartEvent event) async {
-    itemReadyToDrop = await getCurrentDropperItem();
-
-    if (itemReadyToDrop == null) return;
-
-    final worldPosition = camera.globalToLocal(event.localPosition);
-    print("Drag start: $worldPosition");
-
-    // Clamp to bucket:
-    final r = (itemReadyToDrop!.extraData as FruitItem).itemSize / 2;
-    final clampedX = _clampX(worldPosition.x, r);
-    itemReadyToDrop!.moveHorizontallyTo(clampedX);
-    super.onDragStart(event);
-  }
-
-  @override
   void onDragStart(DragStartEvent event) async {
     itemReadyToDrop = await getCurrentDropperItem();
     if (itemReadyToDrop == null) return;
@@ -83,25 +58,6 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     itemReadyToDrop!.moveHorizontallyTo(startX);
 
     super.onDragStart(event);
-  }
-
-  @override
-  void _onDragUpdate(DragUpdateEvent event) {
-    /// update itemReadyToDrop position horizontally
-    if (itemReadyToDrop != null &&
-        itemReadyToDrop!.body.bodyType != BodyType.dynamic) {
-      // final lastItemPosi = itemReadyToDrop!.position.clone();
-      // final worldPos = camera.globalToLocal(event.localDelta);
-      final worldPos = event.localDelta.x+itemReadyToDrop!.position.x;
-      final r = (itemReadyToDrop!.extraData as FruitItem).itemSize / 2;
-      final clampedX = _clampX(worldPos * 0.07, r);
-      print("clampedX: $clampedX, worldPos: $worldPos, r: $r");
-      itemReadyToDrop!.moveHorizontallyTo(clampedX);
-      // itemReadyToDrop?.body.setTransform(
-      //   lastItemPosi..x += event.localDelta.x * 0.07,
-      //   0,
-      // );
-    }
   }
 
   @override
@@ -141,13 +97,6 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     lastFruitKey = null;
     await Future.delayed(const Duration(milliseconds: 150));
     await showNextFruit();
-  }
-
-  double __clampX(double x, double radius) {
-    // Keep inside walls, add a small margin for wall thickness.
-    final half = Bucket.bucketWidth / 2;
-    final margin = Bucket.wallWidth + 0.1;
-    return x.clamp(-half + radius + margin, half - radius - margin);
   }
 
   double _clampX(double x, double radius) {
@@ -195,23 +144,6 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     await world.add(fruit);
   }
 
-  Future<void> dropItem() async {
-    await itemReadyToDrop?.toDynamic();
-
-    // Update queue: remove the used fruit and add a new one
-    if (fruitQueue.isNotEmpty) {
-      fruitQueue.removeAt(0); // Remove from front
-      fruitQueue.add(FruitItem.randomItem); // Add to end
-    }
-
-    itemReadyToDrop = null;
-    lastFruitKey = null;
-
-    // Show next fruit after a short delay
-    await Future.delayed(const Duration(milliseconds: 300));
-    await showNextFruit();
-  }
-
   bool isAdding = false;
 
   Future<void> mergeToNewOne(Vector2 collisionPosition, int fruitNumber) async {
@@ -234,7 +166,6 @@ class MergeGame extends Forge2DGame with DragCallbacks {
   }
 
   Future<Sprite> _getFruitSprite(FruitItem item) async {
-    // final _fruit = FruitItem.randomItem;
     return await Sprite.load(item.fileName);
   }
 }
