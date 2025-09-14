@@ -3,6 +3,7 @@ import 'package:flame_physics/mergeCcomponents/dropper_item.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'controllers/controller_merge.dart';
+import 'mergeCcomponents/dialogs/game_over.dart';
 import 'merge_game.dart';
 
 void main() {
@@ -15,7 +16,13 @@ class GameScreen extends StatelessWidget {
 
   final _mergeController = Get.put(ControllerMerge());
 
-  final game = GameWidget<MergeGame>.controlled(gameFactory: MergeGame.new);
+  final game = GameWidget<MergeGame>.controlled(
+    gameFactory: MergeGame.new,
+    overlayBuilderMap: {
+      MergeGame.gameOverOverlayID: (context, MergeGame game) =>
+          GameOverOverlay(game: game),
+    },
+  );
 
   @override
   Widget build(BuildContext context) {

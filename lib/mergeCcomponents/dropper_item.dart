@@ -23,9 +23,7 @@ enum FruitItem {
   item_13(itemSize: 8.9, fruitNumber: 13),
   item_14(itemSize: 9.8, fruitNumber: 14),
   item_15(itemSize: 10.6, fruitNumber: 15),
-  item_16(itemSize: 11.5, fruitNumber: 16),
-
-  ;
+  item_16(itemSize: 11.5, fruitNumber: 16);
 
   final double itemSize;
   final int fruitNumber;
@@ -33,6 +31,7 @@ enum FruitItem {
   const FruitItem({required this.itemSize, required this.fruitNumber});
 
   String get fileName => "$name.png";
+
   String get fileFullPath => "assets/images/$name.png";
 
   String fileNameByNumber(int number) => "item_$number.png";
@@ -48,7 +47,7 @@ enum FruitItem {
   }
 
   // get random item, the random max item will be first 6 item only
-  static FruitItem get randomItem => FruitItem.values[Random().nextInt(1)];
+  static FruitItem get randomItem => FruitItem.values[Random().nextInt(6)];
 }
 
 class DropperItem extends BodyWithDataComponent<MergeGame>
@@ -88,6 +87,34 @@ class DropperItem extends BodyWithDataComponent<MergeGame>
 
   double get radius => (extraData as FruitItem).itemSize / 2;
 
+  // --- Settled detection (velocity-based) ---
+  bool _everCollided = false;
+  bool _settled = false;
+  double _settleAccum = 0;
+
+  bool get isSettled => _settled;
+
+  static const double _linVelEps = 1.0;   // tune: <= 1 world unit/sec
+  static const double _angVelEps = 1.0;   // tune: <= 1 rad/sec
+  static const double _settleTime = 0.25; // must be slow for 0.25s
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (body.bodyType != BodyType.dynamic || !_everCollided) return;
+
+    final lv = body.linearVelocity.length;
+    final av = body.angularVelocity.abs();
+
+    if (lv < _linVelEps && av < _angVelEps) {
+      _settleAccum += dt;
+      if (_settleAccum >= _settleTime) _settled = true;
+    } else {
+      _settleAccum = 0;
+      _settled = false;
+    }
+  }
+
   /// If you still want to flip a preview piece to dynamic at drop time:
   Future<void> toDynamic() async {
     if (body.bodyType == BodyType.dynamic) return;
@@ -104,6 +131,8 @@ class DropperItem extends BodyWithDataComponent<MergeGame>
 
   @override
   void beginContact(Object other, Contact contact) {
+    _everCollided = true; // once it hits anything, it’s part of the pile
+
     final bodyA = contact.bodyA;
     final bodyB = contact.bodyB;
     final bodyAUserData = bodyA.userData;
@@ -119,7 +148,6 @@ class DropperItem extends BodyWithDataComponent<MergeGame>
       if (fruit1 == fruit2 &&
           bodyA.bodyType == BodyType.dynamic &&
           bodyB.bodyType == BodyType.dynamic) {
-
         final collisionPosition = (bodyA.position + bodyB.position) / 2;
         game.mergeToNewOne(collisionPosition, fruit1.fruitNumber);
         removeFromParent();

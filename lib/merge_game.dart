@@ -14,11 +14,18 @@ import 'mergeCcomponents/particals/repeating_scaling.dart';
 import 'mergeCcomponents/shimmer_line.dart';
 
 class MergeGame extends Forge2DGame with DragCallbacks {
+  static const double kWorldW = 300;
+  static const double kWorldH = 395;
+  static const String gameOverOverlayID = 'GameOver';
+
   MergeGame()
     : super(
         gravity: Vector2(0, 30),
         // camera: CameraComponent.withFixedResolution(width: 300, height: 510),
-        camera: CameraComponent.withFixedResolution(width: 300, height: 395),
+        camera: CameraComponent.withFixedResolution(
+          width: kWorldW,
+          height: kWorldH,
+        ),
       );
 
   @override
@@ -35,6 +42,12 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   RxList<FruitItem> get fruitQueue => _controller.fruitQueue;
 
+  // --- Game over limit (y measured from top rim ~ 0 going down) ---
+  double limitY = 1.0; // 1 world unit below the rim; tweak to taste
+  final double topMargin = 0.05; // small slack to avoid flicker
+
+  bool isGameOver = false;
+
   @override
   FutureOr<void> onLoad() async {
     await super.onLoad();
@@ -49,11 +62,12 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
     // Add the game-over line a little BELOW the bucket rim (rim is at y = 0).
     // If you kept static Bucket fields:
-    final limitY =
-        -Bucket.bucketHeight /
-        2; // 1 world unit inside the bucket; tweak as needed
+    // final limitY =
+    limitY =
+        (-Bucket.bucketHeight / 2) +
+        5; // 1 world unit inside the bucket; tweak as needed
     await world.add(
-      GameOverLine(width: Bucket.bucketWidth, y: limitY + 5, thickness: 0.5),
+      GameOverLine(width: Bucket.bucketWidth, y: limitY, thickness: 0.5),
     );
 
     // await _addShimmerLine();
@@ -88,6 +102,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
   double? _dragPreviewX; // world-space X we control during a drag
 
   bool _isDropping = false;
+
   @override
   void onDragStart(DragStartEvent event) async {
     itemReadyToDrop = await getCurrentDropperItem();
@@ -227,18 +242,69 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     return await Sprite.load(item.fileName);
   }
 
-  bool isGameOver = false;
+  // Poll the pile height each frame
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (isGameOver) return;
+
+    // Find the highest (closest to rim) settled fruit top.
+    // y increases downward, so "higher" means smaller y.
+    double? highestTopY;
+
+    for (final d in world.children.whereType<DropperItem>()) {
+      if (d.body.bodyType != BodyType.dynamic) continue;
+      if (!d.isSettled) continue;
+
+      final topY = d.body.position.y - d.radius; // top point of the circle
+      if (highestTopY == null || topY < highestTopY!) {
+        highestTopY = topY;
+      }
+    }
+
+    if (highestTopY != null && highestTopY! <= (limitY + topMargin)) {
+      onGameOver();
+    }
+  }
 
   void onGameOver() {
     if (isGameOver) return;
     isGameOver = true;
-
-    // Stop interactions/physics tick visually.
     pauseEngine();
+    overlays.add(gameOverOverlayID);
+  }
 
-    // (Optional) Show an overlay / text, play sound, etc.
-    // overlays.add('GameOver');  // if you have an overlay
-    // or add a TextComponent here.
+  Future<void> restartGame() async {
+    // remove overlays immediately to show the game again
+    overlays.remove(gameOverOverlayID);
+
+    // clear world bodies (fruits, bucket, etc.)
+    for (final c in world.children.toList()) {
+      if (c is DropperItem) c.removeFromParent();
+    }
+    // clear non-world UI components (limit line)
+    // await limitLine?.removeFromParent();
+
+    // reset state
+    isGameOver = false;
+    isAdding = false;
+    itemReadyToDrop = null;
+    lastFruitKey = null;
+    fruitQueue
+      ..clear()
+      ..addAll(List.generate(4, (_) => FruitItem.randomItem));
+
+    // rebuild bucket and limit
+    // bucket = Bucket(width: kWorldW, height: 30, wallWidth: 0.3);
+    // await world.add(bucket);
+    // limitLine = LimitLine(width: kWorldW, y: limitY, color: Colors.redAccent);
+    // await add(limitLine!);
+
+    // spawn the next fruit
+    await showNextFruit();
+
+    // resume
+    resumeEngine();
   }
 
   Future<void> showEffectAt(Vector2 position, double itemSize) async {
@@ -257,15 +323,12 @@ class MergeGame extends Forge2DGame with DragCallbacks {
               (Random().nextDouble() * itemSize * 1.5 - itemSize),
               Random().nextDouble() * itemSize * 1.1 - itemSize,
             ),
-            child: SpriteParticle(
-              sprite: sprite,
-              size: Vector2.all(1)
-            ),
+            child: SpriteParticle(sprite: sprite, size: Vector2.all(1)),
           );
         },
       ),
     );
-/*
+    /*
     final p2 = makeBlinkingMovingParticles(
       position: position,
       sprite: sprite,
