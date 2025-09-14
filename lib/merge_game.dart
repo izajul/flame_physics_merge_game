@@ -5,15 +5,18 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flame_physics/mergeCcomponents/dropper_item.dart';
 import 'package:flame_physics/mergeCcomponents/boundary.dart';
 import 'package:flutter/material.dart';
+
+import 'mergeCcomponents/game_over_line.dart';
+
 class MergeGame extends Forge2DGame with DragCallbacks {
   MergeGame()
     : super(
         gravity: Vector2(0, 30),
-        camera: CameraComponent.withFixedResolution(width: 300, height: 400),
+        camera: CameraComponent.withFixedResolution(width: 300, height: 510),
       );
 
   @override
-  Color backgroundColor() => Colors.blueGrey;
+  Color backgroundColor() => Color(0xff191e23);
 
   late final List<FruitItem> fruitQueue = [];
 
@@ -23,6 +26,8 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   @override
   FutureOr<void> onLoad() async {
+    await super.onLoad();
+
     // Add initial fruits to the queue
     for (int i = 0; i < 4; i++) {
       fruitQueue.add(FruitItem.randomItem);
@@ -31,12 +36,24 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     // debugMode = true;
     await _addBoundary();
 
-    await showNextFruit();
+    // Add the game-over line a little BELOW the bucket rim (rim is at y = 0).
+    // If you kept static Bucket fields:
+    final limitY = -Bucket.bucketHeight/2 ; // 1 world unit inside the bucket; tweak as needed
+    await world.add(
+      GameOverLine(
+        width: Bucket.bucketWidth,
+        y: limitY+5,
+        thickness: 0.5,
+      ),
+    );
 
-    return super.onLoad();
+    await showNextFruit();
   }
 
   Future<void> _addBoundary() async {
+    final visibleW = camera.viewport.virtualSize.x / camera.viewfinder.zoom;
+    print("visibleW: $visibleW");
+    Bucket.bucketWidth = (visibleW - Bucket.wallWidth * 2);
     await world.add(Bucket());
   }
 
@@ -63,11 +80,12 @@ class MergeGame extends Forge2DGame with DragCallbacks {
   @override
   void onDragUpdate(DragUpdateEvent event) {
     if (itemReadyToDrop == null) return;
-    if (itemReadyToDrop!.body.bodyType == BodyType.dynamic) return; // already dropped
+    if (itemReadyToDrop!.body.bodyType == BodyType.dynamic)
+      return; // already dropped
 
     // `localDelta.x` is already in game coords; accumulate it.
     _dragPreviewX ??= itemReadyToDrop!.body.position.x;
-    _dragPreviewX = _dragPreviewX! + event.localDelta.x  * 0.07;
+    _dragPreviewX = _dragPreviewX! + event.localDelta.x * 0.07;
 
     // Clamp inside the bucket, considering fruit radius and wall thickness.
     final r = (itemReadyToDrop!.extraData as FruitItem).itemSize * 0.5;
@@ -105,7 +123,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     final half = Bucket.bucketWidth * 0.5;
     final margin = Bucket.wallWidth + 0.1; // small safety margin
     final minX = -half + margin + radius;
-    final maxX =  half - margin - radius;
+    final maxX = half - margin - radius;
 
     // If radius is too big for the bucket, minX may exceed maxX; guard it:
     if (minX > maxX) {
@@ -115,7 +133,6 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     }
     return x.clamp(minX, maxX);
   }
-
 
   Future<DropperItem?> getCurrentDropperItem() async {
     return world.children.whereType<DropperItem>().firstWhereOrNull(
@@ -167,6 +184,20 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   Future<Sprite> _getFruitSprite(FruitItem item) async {
     return await Sprite.load(item.fileName);
+  }
+
+  bool isGameOver = false;
+
+  void onGameOver() {
+    if (isGameOver) return;
+    isGameOver = true;
+
+    // Stop interactions/physics tick visually.
+    pauseEngine();
+
+    // (Optional) Show an overlay / text, play sound, etc.
+    // overlays.add('GameOver');  // if you have an overlay
+    // or add a TextComponent here.
   }
 }
 
