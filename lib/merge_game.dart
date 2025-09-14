@@ -7,6 +7,7 @@ import 'package:flame_physics/mergeCcomponents/boundary.dart';
 import 'package:flutter/material.dart';
 
 import 'mergeCcomponents/game_over_line.dart';
+import 'mergeCcomponents/shimmer_line.dart';
 
 class MergeGame extends Forge2DGame with DragCallbacks {
   MergeGame()
@@ -23,6 +24,8 @@ class MergeGame extends Forge2DGame with DragCallbacks {
   DropperItem? itemReadyToDrop;
 
   ComponentKey? lastFruitKey;
+
+  ShimmerLine? _shimmerLine;
 
   @override
   FutureOr<void> onLoad() async {
@@ -47,7 +50,24 @@ class MergeGame extends Forge2DGame with DragCallbacks {
       ),
     );
 
+    // await _addShimmerLine();
+
     await showNextFruit();
+  }
+
+  Future<void> _addShimmerLine() async {
+    // Example 1: A blueish shimmer line on the left
+    _shimmerLine = ShimmerLine(
+      position: Vector2(-0.0, -Bucket.bucketHeight/2), // Position on the screen
+      height: Bucket.bucketHeight,                // Length of the line
+      baseColor: Color(0xffffff),
+      shimmerColor: Colors.blue.shade100,
+      lineThickness: 0.1,
+      shimmerSpeed: 50.0,
+    );
+
+    // Add the components to your game world
+    world.add(_shimmerLine!);
   }
 
   Future<void> _addBoundary() async {
@@ -73,6 +93,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     final startX = _clampX(camera.globalToLocal(event.localPosition).x, r);
     _dragPreviewX = startX;
     itemReadyToDrop!.moveHorizontallyTo(startX);
+    _shimmerLine?.moveHorizontallyTo(startX);
 
     super.onDragStart(event);
   }
@@ -92,12 +113,15 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     final clampedX = _clampX(_dragPreviewX!, r);
 
     itemReadyToDrop!.moveHorizontallyTo(clampedX);
+    _shimmerLine?.moveHorizontallyTo(clampedX);
   }
 
   @override
   void onDragEnd(DragEndEvent event) async {
     if (itemReadyToDrop != null &&
         itemReadyToDrop!.body.bodyType != BodyType.dynamic) {
+      world.remove(_shimmerLine!);
+      _shimmerLine = null;
       // Either flip preview to dynamic…
       await itemReadyToDrop!.toDynamic();
       await _advanceQueueAndShowNext();
@@ -159,6 +183,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     );
 
     await world.add(fruit);
+    await _addShimmerLine();
   }
 
   bool isAdding = false;
