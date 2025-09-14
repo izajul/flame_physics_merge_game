@@ -1,15 +1,16 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
-import 'package:flame_forge2d/flame_forge2d.dart';
+import 'package:flame/particles.dart';
+import 'package:flame_forge2d/flame_forge2d.dart' hide Particle;
 import 'package:flame_physics/mergeCcomponents/dropper_item.dart';
 import 'package:flame_physics/mergeCcomponents/boundary.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-
 import 'controllers/controller_merge.dart';
 import 'mergeCcomponents/game_over_line.dart';
+import 'mergeCcomponents/particals/repeating_scaling.dart';
 import 'mergeCcomponents/shimmer_line.dart';
 
 class MergeGame extends Forge2DGame with DragCallbacks {
@@ -30,9 +31,9 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   ShimmerLine? _shimmerLine;
 
-  final ControllerMerge _controller = Get.find() ;
+  final ControllerMerge _controller = Get.find();
 
-  RxList<FruitItem> get fruitQueue =>  _controller.fruitQueue;
+  RxList<FruitItem> get fruitQueue => _controller.fruitQueue;
 
   @override
   FutureOr<void> onLoad() async {
@@ -48,13 +49,11 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
     // Add the game-over line a little BELOW the bucket rim (rim is at y = 0).
     // If you kept static Bucket fields:
-    final limitY = -Bucket.bucketHeight/2 ; // 1 world unit inside the bucket; tweak as needed
+    final limitY =
+        -Bucket.bucketHeight /
+        2; // 1 world unit inside the bucket; tweak as needed
     await world.add(
-      GameOverLine(
-        width: Bucket.bucketWidth,
-        y: limitY+5,
-        thickness: 0.5,
-      ),
+      GameOverLine(width: Bucket.bucketWidth, y: limitY + 5, thickness: 0.5),
     );
 
     // await _addShimmerLine();
@@ -65,8 +64,10 @@ class MergeGame extends Forge2DGame with DragCallbacks {
   Future<void> _addShimmerLine() async {
     // Example 1: A blueish shimmer line on the left
     _shimmerLine = ShimmerLine(
-      position: Vector2(-0.0, -Bucket.bucketHeight/2), // Position on the screen
-      height: Bucket.bucketHeight,                // Length of the line
+      position: Vector2(-0.0, -Bucket.bucketHeight / 2),
+      // Position on the screen
+      height: Bucket.bucketHeight,
+      // Length of the line
       baseColor: Color(0xffffff),
       shimmerColor: Colors.blue.shade100,
       lineThickness: 0.1,
@@ -199,7 +200,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     if (isAdding) return;
     isAdding = true;
     print("adding at $collisionPosition");
-    _controller.score(_controller.score.value + fruitNumber * 2 );
+    _controller.score(_controller.score.value + fruitNumber * 2);
 
     await Future.delayed(const Duration(microseconds: 100));
     final _fruit = FruitItem.getByNumber(fruitNumber + 1);
@@ -213,6 +214,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
         bodyType: BodyType.dynamic,
       ),
     );
+    await showEffectAt(collisionPosition, _fruit.itemSize);
     isAdding = false;
   }
 
@@ -232,6 +234,41 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     // (Optional) Show an overlay / text, play sound, etc.
     // overlays.add('GameOver');  // if you have an overlay
     // or add a TextComponent here.
+  }
+
+  Future<void> showEffectAt(Vector2 position, double itemSize) async {
+    final sprite = await Sprite.load('stat_0.png');
+
+    final p1 = ParticleSystemComponent(
+      position: position,
+      particle: Particle.generate(
+        count: 5,
+        generator: (i) {
+          return AcceleratedParticle(
+            acceleration: Vector2.zero(),
+            speed: Vector2.random(),
+            // lifespan: Random().nextDouble() + 0.5,
+            position: Vector2(
+              (Random().nextDouble() * itemSize * 1.5 - itemSize),
+              Random().nextDouble() * itemSize * 1.1 - itemSize,
+            ),
+            child: SpriteParticle(
+              sprite: sprite,
+              size: Vector2.all(1)
+            ),
+          );
+        },
+      ),
+    );
+/*
+    final p2 = makeBlinkingMovingParticles(
+      position: position,
+      sprite: sprite,
+      itemSize: itemSize,
+      to: Vector2(0, -5),
+    );*/
+
+    await world.add(p1);
   }
 }
 
