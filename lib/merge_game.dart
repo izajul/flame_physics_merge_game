@@ -199,6 +199,8 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     if (isAdding) return;
     isAdding = true;
     print("adding at $collisionPosition");
+    _controller.score(_controller.score.value + fruitNumber * 2 );
+
     await Future.delayed(const Duration(microseconds: 100));
     final _fruit = FruitItem.getByNumber(fruitNumber + 1);
     // final _sprite = aliens.getSprite(_fruit.fileName);
