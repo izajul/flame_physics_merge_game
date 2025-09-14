@@ -87,10 +87,13 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   double? _dragPreviewX; // world-space X we control during a drag
 
+  bool _isDropping = false;
   @override
   void onDragStart(DragStartEvent event) async {
     itemReadyToDrop = await getCurrentDropperItem();
     if (itemReadyToDrop == null) return;
+
+    _isDropping = true;
 
     // Start from the current body X; we’ll add deltas in update.
     _dragPreviewX = itemReadyToDrop!.body.position.x;
@@ -133,6 +136,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
       // Either flip preview to dynamic…
       await itemReadyToDrop!.toDynamic();
       await _advanceQueueAndShowNext();
+      _isDropping = false;
     }
     _dragPreviewX = null; // reset
     super.onDragEnd(event);
@@ -167,6 +171,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
   }
 
   Future<DropperItem?> getCurrentDropperItem() async {
+    if (lastFruitKey == null || _isDropping) return null;
     return world.children.whereType<DropperItem>().firstWhereOrNull(
       (e) => e.key == lastFruitKey,
     );
