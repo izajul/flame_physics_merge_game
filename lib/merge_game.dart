@@ -5,7 +5,10 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flame_physics/mergeCcomponents/dropper_item.dart';
 import 'package:flame_physics/mergeCcomponents/boundary.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 
+import 'controllers/controller_merge.dart';
 import 'mergeCcomponents/game_over_line.dart';
 import 'mergeCcomponents/shimmer_line.dart';
 
@@ -13,19 +16,23 @@ class MergeGame extends Forge2DGame with DragCallbacks {
   MergeGame()
     : super(
         gravity: Vector2(0, 30),
-        camera: CameraComponent.withFixedResolution(width: 300, height: 510),
+        // camera: CameraComponent.withFixedResolution(width: 300, height: 510),
+        camera: CameraComponent.withFixedResolution(width: 300, height: 395),
       );
 
   @override
+  // Color backgroundColor() => Color(0xff698eb3);
   Color backgroundColor() => Color(0xff191e23);
-
-  late final List<FruitItem> fruitQueue = [];
 
   DropperItem? itemReadyToDrop;
 
   ComponentKey? lastFruitKey;
 
   ShimmerLine? _shimmerLine;
+
+  final ControllerMerge _controller = Get.find() ;
+
+  RxList<FruitItem> get fruitQueue =>  _controller.fruitQueue;
 
   @override
   FutureOr<void> onLoad() async {

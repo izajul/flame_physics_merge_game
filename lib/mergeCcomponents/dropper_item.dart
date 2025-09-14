@@ -33,6 +33,7 @@ enum FruitItem {
   const FruitItem({required this.itemSize, required this.fruitNumber});
 
   String get fileName => "$name.png";
+  String get fileFullPath => "assets/images/$name.png";
 
   String fileNameByNumber(int number) => "item_$number.png";
 
@@ -47,7 +48,7 @@ enum FruitItem {
   }
 
   // get random item, the random max item will be first 6 item only
-  static FruitItem get randomItem => FruitItem.values[Random().nextInt(5)];
+  static FruitItem get randomItem => FruitItem.values[Random().nextInt(6)];
 }
 
 class DropperItem extends BodyWithDataComponent<MergeGame>
