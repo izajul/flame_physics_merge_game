@@ -1,4 +1,3 @@
-
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
@@ -27,10 +26,13 @@ class ShimmerLine extends PositionComponent {
     this.shimmerHeight = 4.0,
     this.shimmerCount = 10, // Default to 3 for backward compatibility
   }) : super(
-    priority: -1,
-    position: position,
-    size: Vector2(lineThickness, height), // Width is thickness, height is length
-  );
+         priority: -1,
+         position: position,
+         size: Vector2(
+           lineThickness,
+           height,
+         ), // Width is thickness, height is length
+       );
 
   @override
   void render(Canvas canvas) {
@@ -119,23 +121,25 @@ class _ShimmerLinePainter extends CustomPainter {
     for (int i = 0; i < shimmerCount; i++) {
       // THE KEY FIX: Calculate each shimmer's position based on the master
       // progress and add the spacing offset. The modulo wraps it around perfectly.
-      final currentShimmerProgress = (progress + (i * spacing)) % totalLoopDistance;
+      final currentShimmerProgress =
+          (progress + (i * spacing)) % totalLoopDistance;
 
       final shimmerTop = currentShimmerProgress - shimmerHeight;
       final shimmerBottom = currentShimmerProgress;
 
       // Create the gradient for this specific shimmer
-      shimmerPaint.shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Colors.transparent, shimmerColor, Colors.transparent],
-        stops: const [0.0, 0.5, 1.0],
-      ).createShader(
-        Rect.fromPoints(
-          Offset(0, shimmerTop),
-          Offset(width, shimmerBottom),
-        ),
-      );
+      shimmerPaint.shader =
+          LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.transparent, shimmerColor, Colors.transparent],
+            stops: const [0.0, 0.5, 1.0],
+          ).createShader(
+            Rect.fromPoints(
+              Offset(0, shimmerTop),
+              Offset(width, shimmerBottom),
+            ),
+          );
 
       // Draw the line with the gradient shader applied
       canvas.drawLine(
