@@ -85,7 +85,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
       baseColor: Color(0xffffff),
       shimmerColor: Colors.blue.shade100,
       lineThickness: 0.1,
-      shimmerSpeed: 50.0,
+      // shimmerSpeed: 50.0,
     );
 
     // Add the components to your game world

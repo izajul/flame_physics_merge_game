@@ -8,6 +8,10 @@ class ShimmerLine extends PositionComponent {
   final Color baseColor;
   final Color shimmerColor;
   final double shimmerHeight;
+  final int shimmerCount; // New property for multiple shimmers
+
+  // Now a list to track each shimmer's progress
+  // final List<double> _shimmerProgress = [];
 
   // Internal state for animation
   double _animationProgress = 0.0;
@@ -17,10 +21,11 @@ class ShimmerLine extends PositionComponent {
     required Vector2 position,
     required double height,
     this.lineThickness = 2.0,
-    this.shimmerSpeed = 150.0, // Pixels per second
+    this.shimmerSpeed = 4.0, // Pixels per second
     this.baseColor = Colors.cyan,
     this.shimmerColor = Colors.white,
-    this.shimmerHeight = 50.0,
+    this.shimmerHeight = 4.0,
+    this.shimmerCount = 10, // Default to 3 for backward compatibility
   }) : super(
     priority: -1,
     position: position,
@@ -37,6 +42,8 @@ class ShimmerLine extends PositionComponent {
       shimmerColor: shimmerColor,
       lineThickness: lineThickness,
       shimmerHeight: shimmerHeight,
+      shimmerCount: shimmerCount,
+      componentHeight: height,
     );
     // We use size (the component's dimensions) to paint onto the canvas
     painter.paint(canvas, size.toSize());
@@ -49,10 +56,12 @@ class ShimmerLine extends PositionComponent {
     // The progress will be a value representing the top position of the shimmer
     _animationProgress += shimmerSpeed * dt;
 
-    // If the shimmer has moved past the line's height plus its own height,
-    // reset it to the top to create a loop.
-    if (_animationProgress > height + shimmerHeight) {
-      _animationProgress = 0;
+    // The total distance a shimmer travels before looping.
+    final totalLoopDistance = height + shimmerHeight;
+
+    // Use modulo to wrap the master progress, ensuring the animation loops forever.
+    if (_animationProgress > totalLoopDistance) {
+      _animationProgress %= totalLoopDistance;
     }
   }
 
@@ -64,11 +73,13 @@ class ShimmerLine extends PositionComponent {
 }
 
 class _ShimmerLinePainter extends CustomPainter {
-  final double progress; // The current vertical position of the shimmer
+  final double progress; // The master progress value
   final Color baseColor;
   final Color shimmerColor;
   final double lineThickness;
   final double shimmerHeight;
+  final int shimmerCount;
+  final double componentHeight; // The actual height of the line
 
   _ShimmerLinePainter({
     required this.progress,
@@ -76,65 +87,67 @@ class _ShimmerLinePainter extends CustomPainter {
     required this.shimmerColor,
     required this.lineThickness,
     required this.shimmerHeight,
+    required this.shimmerCount,
+    required this.componentHeight,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final double width = size.width;
-    final double height = size.height;
 
     // 1. Paint the base line
-    // This is the static, semi-transparent line in the background.
     final basePaint = Paint()
-      // ..color = baseColor.withOpacity(0.3)
-      ..color = baseColor.withOpacity(0.08)
+      ..color = baseColor.withOpacity(0.1)
       ..strokeWidth = lineThickness
       ..style = PaintingStyle.stroke;
 
     canvas.drawLine(
       Offset(width / 2, 0),
-      Offset(width / 2, height),
+      Offset(width / 2, componentHeight),
       basePaint,
     );
 
-    // 2. Paint the shimmering glow
-    // This is the gradient that moves.
+    // 2. Calculate spacing and draw each shimmer
     final shimmerPaint = Paint()
       ..strokeWidth = lineThickness
       ..style = PaintingStyle.stroke;
 
-    // Define the vertical position for the gradient
-    final shimmerTop = progress - shimmerHeight;
-    final shimmerBottom = progress;
+    final totalLoopDistance = componentHeight + shimmerHeight;
+    // Calculate the space between each shimmer
+    final spacing = totalLoopDistance / shimmerCount;
 
-    // Create a linear gradient for the glow effect
-    shimmerPaint.shader = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        Colors.transparent, // Fades out at the top
-        shimmerColor,       // Brightest in the middle
-        Colors.transparent, // Fades out at the bottom
-      ],
-      stops: const [0.0, 0.5, 1.0],
-    ).createShader(
-      Rect.fromPoints(
-        Offset(0, shimmerTop),
-        Offset(width, shimmerBottom),
-      ),
-    );
+    for (int i = 0; i < shimmerCount; i++) {
+      // THE KEY FIX: Calculate each shimmer's position based on the master
+      // progress and add the spacing offset. The modulo wraps it around perfectly.
+      final currentShimmerProgress = (progress + (i * spacing)) % totalLoopDistance;
 
-    // Draw the shimmering line on top of the base line
-    canvas.drawLine(
-      Offset(width / 2, 0),
-      Offset(width / 2, height),
-      shimmerPaint,
-    );
+      final shimmerTop = currentShimmerProgress - shimmerHeight;
+      final shimmerBottom = currentShimmerProgress;
+
+      // Create the gradient for this specific shimmer
+      shimmerPaint.shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.transparent, shimmerColor, Colors.transparent],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(
+        Rect.fromPoints(
+          Offset(0, shimmerTop),
+          Offset(width, shimmerBottom),
+        ),
+      );
+
+      // Draw the line with the gradient shader applied
+      canvas.drawLine(
+        Offset(width / 2, 0),
+        Offset(width / 2, componentHeight),
+        shimmerPaint,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    // We must return true to repaint on every frame for the animation to work
     return true;
   }
 }

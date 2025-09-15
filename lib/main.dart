@@ -29,11 +29,17 @@ class GameScreen extends StatelessWidget {
     final _fSize = 10;
     return Scaffold(
       backgroundColor: Color(0xff191e23),
-      appBar: AppBar(title: const Text('Fruits Merge Challenges',style: TextStyle(
-        color: Colors.white,
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-      ),), backgroundColor: Color(0xff191e23),),
+      // appBar: AppBar(
+      //   title: const Text(
+      //     'Fruits Merge Challenges',
+      //     style: TextStyle(
+      //       color: Colors.white,
+      //       fontSize: 20,
+      //       fontWeight: FontWeight.bold,
+      //     ),
+      //   ),
+      //   backgroundColor: Color(0xff191e23),
+      // ),
       body: Column(
         children: [
           /// all fruits list
