@@ -103,10 +103,19 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   bool _isDropping = false;
 
+  int? _activePointer;      // which finger is controlling the preview
+
   @override
   void onDragStart(DragStartEvent event) async {
+    if (isGameOver) return;
+
+    // If another finger already controls the drag, ignore this new one.
+    if (_activePointer != null) return;
+
     itemReadyToDrop = await getCurrentDropperItem();
     if (itemReadyToDrop == null) return;
+
+    _activePointer = event.pointerId;
 
     _isDropping = true;
 
@@ -126,6 +135,9 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   @override
   void onDragUpdate(DragUpdateEvent event) {
+    if (isGameOver) return;
+    if (_activePointer != event.pointerId) return;
+
     if (itemReadyToDrop == null) return;
     if (itemReadyToDrop!.body.bodyType == BodyType.dynamic)
       return; // already dropped
@@ -144,6 +156,8 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   @override
   void onDragEnd(DragEndEvent event) async {
+    if (_activePointer != event.pointerId) return;        // ignore non-owner ends
+
     if (itemReadyToDrop != null &&
         itemReadyToDrop!.body.bodyType != BodyType.dynamic) {
       world.remove(_shimmerLine!);
@@ -154,6 +168,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
       _isDropping = false;
     }
     _dragPreviewX = null; // reset
+    _activePointer = null;
     super.onDragEnd(event);
   }
 
