@@ -2,13 +2,15 @@ import 'package:flame/game.dart';
 import 'package:flame_physics/mergeCcomponents/dropper_item.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'bubbleShooterGame/bubbleShooter.dart';
 import 'controllers/controller_merge.dart';
 import 'mergeCcomponents/dialogs/game_over.dart';
 import 'merge_game.dart';
 
 void main() {
-  runApp(MaterialApp(home: GameScreen()));
+  // runApp(MaterialApp(home: GameScreen()));
   // runApp(GameWidget.controlled(gameFactory: MyPhysicsGame.new));
+  runApp(GameWidget.controlled(gameFactory: BubbleShooterGame.new));
 }
 
 class GameScreen extends StatelessWidget {
