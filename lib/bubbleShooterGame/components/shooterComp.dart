@@ -1,8 +1,9 @@
+// In your shooter.dart file
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
-import 'package:flame/extensions.dart';
+
+// NOTE: We removed DragCallbacks and TapCallbacks from here
 import 'package:flame_physics/bubbleShooterGame/components/pool.dart';
 
 import '../bubbleShooter.dart';
@@ -10,7 +11,7 @@ import 'bubbleComp.dart';
 import 'gridComponent.dart';
 
 class Shooter extends PositionComponent
-    with HasGameReference<BubbleShooterGame>, DragCallbacks, TapCallbacks {
+    with HasGameReference<BubbleShooterGame> {
   Shooter({
     required this.grid,
     required this.pool,
@@ -25,99 +26,60 @@ class Shooter extends PositionComponent
   final Grid grid;
   final BubblePool pool;
 
-  // config
-  final double muzzleOffset; // distance from center to spawn projectile
+  // Config
+  final double muzzleOffset;
   final double minAngleDeg;
   final double maxAngleDeg;
   final double speed;
-  final int previewDots; // how many dots to render
-  final double previewStep; // px between preview samples
-  late Vector2 muzzleCenter;
+  final int previewDots;
+  final double previewStep;
 
-  // state
-  double _angleRad = math.pi / 2; // pointing straight up by default
+  // State
+  double _angleRad = math.pi / 2; // Point straight up by default
   Bubble? _projectile;
-  late TrajectoryDots? _dots;
+  TrajectoryDots? _dots;
 
   @override
   Future<void> onLoad() async {
-    anchor = Anchor.center;
-    // position = Vector2.zero();
+    // Set position relative to the game size
     position = Vector2(game.size.x / 2, game.size.y - 56);
-    size = game.size;
 
-    _recalcMuzzle();
-
-    _dots = TrajectoryDots(dotCount: previewDots, position: position);
+    _dots = TrajectoryDots(dotCount: previewDots);
     add(_dots!);
 
     _ensureProjectileReady();
-    _updatePreview();
+    _updatePreview(); // Show the initial aiming line
   }
 
-  @override
-  void onGameResize(Vector2 canvasSize) {
-    super.onGameResize(canvasSize);
-    size = canvasSize;
-    _recalcMuzzle();
+  // Helper to get a direction vector from an angle
+  Vector2 _dirFromAngle(double angleRadians) =>
+      Vector2(math.cos(angleRadians), -math.sin(angleRadians));
+
+  // --- Public Methods (called by the game class) ---
+
+  void aimToward(Vector2 globalTouchPosition) {
+    // Prevent aiming below the shooter's horizontal line
+    final clampedY = math.min(globalTouchPosition.y, position.y - muzzleOffset);
+    final target = Vector2(globalTouchPosition.x, clampedY);
+
+    // Calculate the angle based on the vector from the shooter's
+    // world position to the user's touch position.
+    final dx = target.x - position.x;
+    final dy = -(target.y - position.y); // Y is inverted for math angle
+
+    final rawAngleRad = math.atan2(dy, dx);
+    final rawAngleDeg = rawAngleRad * (180 / math.pi);
+    final clampedAngleDeg = rawAngleDeg.clamp(minAngleDeg, maxAngleDeg);
+    _angleRad = clampedAngleDeg * (math.pi / 180.0);
+
     _placeProjectileAtMuzzle();
     _updatePreview();
   }
 
-  void _recalcMuzzle() => muzzleCenter = Vector2(size.x / 2, size.y );
-
-  // region — Input
-  @override
-  void onDragUpdate(DragUpdateEvent event) {
-    _aimToward(event.localEndPosition);
-    print("onDragUpdate:${event.localEndPosition}");
-  }
-
-  @override
-  void onTapDown(TapDownEvent event) {
-    print("onTapDown:${event.localPosition}");
-    _aimToward(event.localPosition);
-    _fire();
-  }
-
-  // 1) Add a helper once in Shooter
-  Vector2 _dirFromAngle(double a) =>
-      Vector2(math.cos(a), -math.sin(a)); // note the minus
-
-  // region — Core
-  void _aimToward(Vector2 p) {
-    final d = (p - muzzleCenter);
-    // final d = p - position;
-    if (d.y > -4) d.y = -4; // never aim downward
-    final raw = math.atan2(-d.y, d.x); // <- invert y here
-    final deg = raw * 180 / math.pi;
-    final clampedDeg = deg.clamp(minAngleDeg, maxAngleDeg).toDouble();
-    _angleRad = clampedDeg * math.pi / 180.0;
-
-    print("_aimToward - diff: $d, raw: $raw, deg: $deg, clampedDeg: $clampedDeg, _angleRad: $_angleRad");
-    _placeProjectileAtMuzzle();
-    _updatePreview();
-  }
-
-  // 3) Use the helper for muzzle placement:
-  void _placeProjectileAtMuzzle() {
+  void fire() {
     if (_projectile == null) return;
-    final p = muzzleCenter + _dirFromAngle(_angleRad) * muzzleOffset;
-    _projectile!.position = p;
-  }
 
-  void __placeProjectileAtMuzzle() {
-    final p = Vector2(
-      position.x + muzzleOffset * math.cos(_angleRad),
-      position.y + muzzleOffset * math.sin(_angleRad),
-    );
-    _projectile?.position = p;
-  }
-
-  // 4) Use the helper when firing:
-  void _fire() {
-    if (_projectile == null) return;
-    final dir = _dirFromAngle(_angleRad); // <- y inverted
+    final dir = _dirFromAngle(_angleRad);
     final v = dir * speed;
 
     final b = _projectile!;
@@ -127,57 +89,65 @@ class Shooter extends PositionComponent
     game.add(mover);
 
     _ensureProjectileReady();
-    _updatePreview();
+    _dots?.updatePoints([]); // Hide preview after firing
+  }
+
+  // --- Internal Logic ---
+
+  void _placeProjectileAtMuzzle() {
+    if (_projectile == null) return;
+    // Projectile's position is absolute (in the game world)
+    _projectile!.position = position + _dirFromAngle(_angleRad) * muzzleOffset;
   }
 
   void _ensureProjectileReady() {
     if (_projectile != null) return;
-    final item = grid.nextSpawnColor(); // implement bias toward board colors
-    final b = pool.get(item);
-    b.settled = false;
-    b.priority = 40;
-    b.angle = 0;
-    b.scale = Vector2.all(1);
-    game.add(b);
+    final item = grid.nextSpawnColor();
+    final b = pool.get(item)
+      ..settled = false
+      ..priority = 40;
+    game.add(b); // Add bubble to the main game
     _projectile = b;
     _placeProjectileAtMuzzle();
   }
 
-  // 5) And in _updatePreview() for both the start point and the marching dir:
   void _updatePreview() {
     final dots = _dots;
     if (dots == null) return;
 
     final samples = <Vector2>[];
-    var p = muzzleCenter + _dirFromAngle(_angleRad) * muzzleOffset; // start
-    var dir = _dirFromAngle(_angleRad); // step
+    // Start the preview from the muzzle, in the shooter's local coordinates
+    var p = _dirFromAngle(_angleRad) * muzzleOffset;
+    var dir = _dirFromAngle(_angleRad);
 
-    final left = grid.cellRadius;
-    final right = game.size.x - grid.cellRadius;
-    final top = grid.topY + grid.cellRadius;
-    final bottom = muzzleCenter.y - 8;
+    final worldLeft = grid.cellRadius;
+    final worldRight = game.size.x - grid.cellRadius;
+    final worldTop = grid.topY + grid.cellRadius;
 
-    for (int i = 0; i < previewDots * 4; i++) {
+    for (int i = 0; i < 200; i++) {
+      // Increased loop limit for safety
       p += dir * previewStep;
+      final worldP = p + position; // Convert local point to world for checks
 
-      if (p.x <= left || p.x >= right) {
-        dir.x = -dir.x; // reflect on side walls
-        p.x = p.x.clamp(left, right);
+      if (worldP.x <= worldLeft || worldP.x >= worldRight) {
+        dir.x = -dir.x;
+        p.x = (worldP.x.clamp(worldLeft, worldRight)) - position.x;
       }
 
-      if (p.y <= top || grid.isNearSettledCenter(p, grid.cellRadius * 1.05)) {
+      if (worldP.y <= worldTop ||
+          grid.isNearSettledCenter(worldP, grid.cellRadius * 1.05)) {
         samples.add(p);
         break;
       }
-      if (p.y < bottom) samples.add(p);
 
-      if (samples.length >= previewDots) break;
-      if (i % 3 == 0) samples.add(p);
+      if (samples.length < previewDots) {
+        samples.add(p);
+      } else {
+        break;
+      }
     }
     dots.updatePoints(samples);
   }
-
-  // endregion
 }
 
 /// Renders small dots along the computed trajectory.
@@ -189,8 +159,10 @@ class TrajectoryDots extends PositionComponent {
   final int dotCount;
   List<Vector2> _points;
 
-  void updatePoints(List<Vector2> pts) {
-    _points = pts.take(dotCount).toList(growable: false);
+  void updatePoints(List<Vector2> pts) async {
+    if (isMounted) {
+      _points = pts.take(dotCount).toList(growable: false);
+    }
   }
 
   static const _r = 2.5;
@@ -204,6 +176,7 @@ class TrajectoryDots extends PositionComponent {
   }
 }
 
+// ... (The _MovingBubble class remains the same)
 /// Wraps a Bubble with simple movement, wall bounces, and settle logic.
 /// When it touches a settled bubble (or ceiling), it snaps to grid and triggers match checks.
 class _MovingBubble extends Component with HasGameReference {

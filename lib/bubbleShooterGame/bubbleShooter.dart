@@ -1,12 +1,13 @@
 
 import 'dart:ui';
+import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'components/gridComponent.dart';
 import 'components/imageCache.dart';
 import 'components/pool.dart';
 import 'components/shooterComp.dart';
 
-class BubbleShooterGame extends FlameGame with HasCollisionDetection {
+class BubbleShooterGame extends FlameGame with HasCollisionDetection, DragCallbacks, TapCallbacks {
   @override
   Color backgroundColor() => const Color(0xff191e23);
 
@@ -28,5 +29,25 @@ class BubbleShooterGame extends FlameGame with HasCollisionDetection {
 
     // (Optional) seed a starter ceiling of settled bubbles)
     grid.seedInitialRows(pool);
+  }
+
+  // Handle aiming when the user drags their finger
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    shooter.aimToward(event.deviceStartPosition);
+  }
+
+  // Handle firing when the user lifts their finger
+  @override
+  void onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event);
+    shooter.fire();
+  }
+
+  // Also allow tap-to-aim-and-fire
+  @override
+  void onTapUp(TapUpEvent event) {
+    shooter.aimToward(event.devicePosition);
+    shooter.fire();
   }
 }
