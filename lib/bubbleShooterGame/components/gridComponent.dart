@@ -314,7 +314,13 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
       final bub = _cells.remove(cell);
       if (bub != null) {
         // Optional: animate falling; for now, recycle
-        pool.release(bub);
+        // pool.release(bub);
+        game.add(FallingBubbles(
+          bubble: bub,
+          grid: this,
+          pool: pool,
+          speed: 350,
+        ));
       }
     }
   }

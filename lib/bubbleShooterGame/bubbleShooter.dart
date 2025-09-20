@@ -54,7 +54,7 @@ class BubbleShooterGame extends FlameGame with HasCollisionDetection, DragCallba
     shooter.fire();
   }
 
-  Future<void> showPopEffect(Bubble bub) async {
+  Future<void> showPopEffect(Bubble bub, {int points = 20}) async {
     /// Optional: play pop effect here.
 
     // 2. Add the pop effect at the bubble's position
@@ -68,7 +68,7 @@ class BubbleShooterGame extends FlameGame with HasCollisionDetection, DragCallba
     // 3. Add the score pop-up at the bubble's position
     add(
       ScorePopup(
-        points: 20,
+        points: points,
         position: bub.position,
       ),
     );
