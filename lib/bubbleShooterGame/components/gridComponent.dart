@@ -4,6 +4,7 @@ import 'package:flame/extensions.dart';
 import 'dart:math' as math;
 import 'dart:math' show Point;
 import 'package:flame_physics/bubbleShooterGame/components/pool.dart';
+import 'package:get/get.dart';
 
 import '../bubbleShooter.dart';
 import 'bubbleComp.dart';
@@ -184,6 +185,10 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
       // Drop unattached bubbles (not connected to top row)
       _dropUnattached(pool);
     }
+
+    if (hasReachedLossLine(game.lossLineY)) {
+      game.gameOver();
+    }
   }
 
   // ---------------------------
@@ -317,12 +322,27 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
         // pool.release(bub);
         game.add(FallingBubbles(
           bubble: bub,
-          grid: this,
           pool: pool,
           speed: 350,
         ));
       }
     }
+  }
+  
+  Future<void> destroyGrids(BubblePool pool) async {
+    for (final entry in _cells.entries) {
+      final bub = entry.value;
+      // bub.removeFromParent();
+      // showing pop effects
+      await game.add(FallingBubbles(
+        bubble: bub,
+        pool: pool,
+        speed: 350,
+        points: 0
+      ));
+      // await Future.delayed(20.milliseconds);
+    }
+    _cells.clear();
   }
 
   int _countFittableColsForRow(int row) {
@@ -339,5 +359,70 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
   BubblesItems _randomAnyColor() {
     final all = BubblesItems.values;
     return all[_rng.nextInt(all.length)];
+  }
+
+  // ----------------------
+  // Game Over Logics
+  // ----------------------
+
+  // grid.dart additions
+  bool hasReachedLossLine(double limitY) {
+    // Any settled bubble touching/past the loss line?
+    for (final b in _cells.values) {
+      final r = b.width * 0.5;
+      if (b.position.y + r >= limitY) return true;
+    }
+    return false;
+  }
+
+  /// Push all rows down by [steps] (usually 1), then spawn a fresh row at row 0.
+  /// Returns true if this push caused game over (crossed loss line).
+  bool advanceRows(int steps, BubblePool pool, {double? lossLineY}) {
+    if (steps <= 0 || _cells.isEmpty) {
+      // still spawn a new top row even if board is empty (game design choice)
+      _spawnTopRow(pool);
+      if (lossLineY != null && hasReachedLossLine(lossLineY)) return true;
+      return false;
+    }
+
+    for (int s = 0; s < steps; s++) {
+      // 1) shift all cells down (+1 row)
+      final moved = <Point<int>, Bubble>{};
+      for (final entry in _cells.entries) {
+        final old = entry.key;
+        final b = entry.value;
+        final next = Point<int>(old.x, old.y + 1);
+        b.row = next.y;
+        b.col = next.x;
+        b.position = toWorld(b.col, b.row);
+        moved[next] = b;
+      }
+      _cells
+        ..clear()
+        ..addAll(moved);
+
+      // 2) spawn new top row at row 0
+      _spawnTopRow(pool);
+    }
+
+    // 3) after push, check loss
+    if (lossLineY != null && hasReachedLossLine(lossLineY)) return true;
+    return false;
+  }
+
+  void _spawnTopRow(BubblePool pool) {
+    final int row = 0;
+    final int cols = _countFittableColsForRow(row);
+    for (int col = 0; col < cols; col++) {
+      final item = _randomAnyColor(); // or bias with nextSpawnColor()
+      final b = pool.get(item)
+        ..settled = true
+        ..row = row
+        ..col = col
+        ..priority = 30
+        ..position = toWorld(col, row);
+      game.add(b);
+      _cells[Point(col, row)] = b;
+    }
   }
 }

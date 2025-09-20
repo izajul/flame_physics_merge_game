@@ -87,6 +87,7 @@ class Shooter extends PositionComponent
 
     final mover = _MovingBubble(bubble: b, grid: grid, pool: pool, speed: v);
     game.add(mover);
+    game.oneShotFired();
 
     grid.removeProjectile();
     _nextProjectile?.removeFromParent();
@@ -158,6 +159,17 @@ class Shooter extends PositionComponent
       }
     }
     dots.updatePoints(samples);
+  }
+
+  Future<void> destroy() async {
+    _dots?.removeFromParent();
+    _projectile?.removeFromParent();
+    _nextProjectile?.removeFromParent();
+    _projectile = null;
+    _nextProjectile = null;
+
+    // Remove the shooter from the game
+    removeFromParent();
   }
 }
 

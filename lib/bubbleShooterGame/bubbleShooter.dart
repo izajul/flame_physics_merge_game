@@ -1,4 +1,3 @@
-
 import 'dart:ui';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -10,13 +9,20 @@ import 'components/pop_effect.dart';
 import 'components/pop_score.dart';
 import 'components/shooterComp.dart';
 
-class BubbleShooterGame extends FlameGame with HasCollisionDetection, DragCallbacks, TapCallbacks {
+class BubbleShooterGame extends FlameGame
+    with HasCollisionDetection, DragCallbacks, TapCallbacks {
   @override
   Color backgroundColor() => const Color(0xff191e23);
 
   late final Grid grid; // hex grid manager
   late final Shooter shooter; // handles aim + fired bubble
   late final BubblePool pool; // object pooling
+
+  int scores = 0;
+  int _shotsSinceAdvance = 0;
+  bool _gameOver = false;
+
+  double get lossLineY => size.y- shooter.muzzleOffset; // shooter line
 
   @override
   Future<void> onLoad() async {
@@ -65,12 +71,41 @@ class BubbleShooterGame extends FlameGame with HasCollisionDetection, DragCallba
       ),
     );
 
+    /// the points = 0 mean all bubbles are popping after game over
+    if(points == 0) {
+      return;
+    }
     // 3. Add the score pop-up at the bubble's position
-    add(
-      ScorePopup(
-        points: points,
-        position: bub.position,
-      ),
-    );
+    add(ScorePopup(points: points, position: bub.position));
+    scores += points;
+  }
+
+  void oneShotFired() async {
+    print("_shotsSinceAdvance: $_shotsSinceAdvance,_gameOver:$_gameOver ");
+    if (_gameOver) return;
+
+    _shotsSinceAdvance++;
+    if (_shotsSinceAdvance >= 3) {
+      _shotsSinceAdvance = 0;
+      final lost = grid.advanceRows(1, pool, lossLineY: lossLineY);
+      if (lost) {
+        gameOver();
+      }
+    }
+  }
+
+  void gameOver() async {
+    print("gameOver");
+    if (_gameOver) return;
+    _gameOver = true;
+
+    // Stop input by removing/pausing Shooter (pick one):
+    await shooter.destroy();
+
+    grid.destroyGrids(pool);
+    // or: pauseEngine();
+
+    // TODO: show overlay / restart button, sound, etc.
+    // overlays.add('GameOverMenu');
   }
 }

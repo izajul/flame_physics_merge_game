@@ -29,15 +29,15 @@ class Bubble extends SpriteComponent {
 
 class FallingBubbles extends Component with HasGameReference<BubbleShooterGame> {
   final Bubble bubble;
-  final Grid grid;
   final BubblePool pool;
   final double speed;
+  final int points;
 
   FallingBubbles({
     required this.bubble,
-    required this.grid,
     required this.pool,
     required this.speed,
+    this.points = 100
   });
 
   @override
@@ -51,7 +51,7 @@ class FallingBubbles extends Component with HasGameReference<BubbleShooterGame> 
     super.update(dt);
     bubble.position += Vector2(0, speed * dt);
     if (bubble.y > game.size.y-bubble.size.x/2) {
-      game.showPopEffect(bubble,points: 100);
+      game.showPopEffect(bubble,points: points);
       pool.release(bubble);
       removeFromParent();
     }
