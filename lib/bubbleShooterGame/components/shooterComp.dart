@@ -15,7 +15,7 @@ class Shooter extends PositionComponent
   Shooter({
     required this.grid,
     required this.pool,
-    this.muzzleOffset = 28,
+    this.muzzleOffset = 58,
     this.minAngleDeg = 10,
     this.maxAngleDeg = 170,
     this.speed = 520,
@@ -36,7 +36,7 @@ class Shooter extends PositionComponent
 
   // State
   double _angleRad = math.pi / 2; // Point straight up by default
-  Bubble? _projectile;
+  Bubble? _projectile, _nextProjectile;
   TrajectoryDots? _dots;
 
   @override
@@ -88,6 +88,9 @@ class Shooter extends PositionComponent
     final mover = _MovingBubble(bubble: b, grid: grid, pool: pool, speed: v);
     game.add(mover);
 
+    grid.removeProjectile();
+    _nextProjectile?.removeFromParent();
+
     _ensureProjectileReady();
     _dots?.updatePoints([]); // Hide preview after firing
   }
@@ -102,12 +105,20 @@ class Shooter extends PositionComponent
 
   void _ensureProjectileReady() {
     if (_projectile != null) return;
-    final item = grid.nextSpawnColor();
-    final b = pool.get(item)
+    final items = grid.nextSpawnColor();
+    final b = pool.get(items[0])
       ..settled = false
       ..priority = 40;
     game.add(b); // Add bubble to the main game
     _projectile = b;
+
+    final b2 = pool.get(items[1])
+      ..position = position
+      ..settled = false
+      ..priority = 40;
+    game.add(b2); // Add upcoming bubble to the main game
+    _nextProjectile = b2;
+
     _placeProjectileAtMuzzle();
   }
 

@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flame/components.dart';
+import 'package:flame/extensions.dart';
 import 'dart:math' as math;
 import 'dart:math' show Point;
 import 'package:flame_physics/bubbleShooterGame/components/pool.dart';
@@ -177,6 +178,7 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
         if (bub != null) {
           // Optionally: play pop effect here.
           pool.release(bub);
+          game.showPopEffect(bub);
         }
       }
       // Drop unattached bubbles (not connected to top row)
@@ -188,15 +190,43 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
   // Spawn bias & seeding
   // ---------------------------
 
+  /// managing queue of bubbles to spawn
+  /// max 2 bubbles at a time
+  final List<BubblesItems> _spawnQueue = [];
+
   /// Bias next spawn to colors currently present on the board;
   /// if empty, fall back to any enum value.
-  BubblesItems nextSpawnColor() {
+  List<BubblesItems> nextSpawnColor() {
+
+    // if(_spawnQueue.length == 2){
+    //   _spawnQueue.removeAt(0);
+    // }
+
     if (_cells.isEmpty) {
       final all = BubblesItems.values;
-      return all[_rng.nextInt(all.length)];
+      return [all[_rng.nextInt(all.length)], all[_rng.nextInt(all.length)]];
     }
+
     final present = _cells.values.map((b) => b.item).toSet().toList();
-    return present[_rng.nextInt(present.length)];
+    // return present[_rng.nextInt(present.length)];
+    if(_spawnQueue.isEmpty){
+      _spawnQueue.add(present[_rng.nextInt(present.length)]);
+      _spawnQueue.add(present[_rng.nextInt(present.length)]);
+    }else {
+      _spawnQueue.add(present[_rng.nextInt(present.length)]);
+    }
+    // return _spawnQueue[0];
+    return _spawnQueue;
+  }
+
+  void removeProjectile(){
+    if(_spawnQueue.isNotEmpty){
+      _spawnQueue.removeAt(0);
+    }
+  }
+
+  void swipeQueue() {
+    _spawnQueue.reverse();
   }
 
   /// Quickly fill a few top rows with settled bubbles for testing.

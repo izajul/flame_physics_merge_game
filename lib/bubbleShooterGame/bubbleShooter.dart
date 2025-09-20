@@ -2,9 +2,12 @@
 import 'dart:ui';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
+import 'package:flame_physics/bubbleShooterGame/components/bubbleComp.dart';
 import 'components/gridComponent.dart';
 import 'components/imageCache.dart';
 import 'components/pool.dart';
+import 'components/pop_effect.dart';
+import 'components/pop_score.dart';
 import 'components/shooterComp.dart';
 
 class BubbleShooterGame extends FlameGame with HasCollisionDetection, DragCallbacks, TapCallbacks {
@@ -49,5 +52,25 @@ class BubbleShooterGame extends FlameGame with HasCollisionDetection, DragCallba
   void onTapUp(TapUpEvent event) {
     shooter.aimToward(event.devicePosition);
     shooter.fire();
+  }
+
+  Future<void> showPopEffect(Bubble bub) async {
+    /// Optional: play pop effect here.
+
+    // 2. Add the pop effect at the bubble's position
+    add(
+      BubblePopEffect(
+        position: bub.position,
+        color: bub.item.ballColor, // Pass the bubble's color to the effect
+      ),
+    );
+
+    // 3. Add the score pop-up at the bubble's position
+    add(
+      ScorePopup(
+        points: 20,
+        position: bub.position,
+      ),
+    );
   }
 }
