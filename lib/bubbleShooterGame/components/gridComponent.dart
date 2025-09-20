@@ -202,7 +202,6 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
   /// Bias next spawn to colors currently present on the board;
   /// if empty, fall back to any enum value.
   List<BubblesItems> nextSpawnColor() {
-
     // if(_spawnQueue.length == 2){
     //   _spawnQueue.removeAt(0);
     // }
@@ -214,18 +213,18 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
 
     final present = _cells.values.map((b) => b.item).toSet().toList();
     // return present[_rng.nextInt(present.length)];
-    if(_spawnQueue.isEmpty){
+    if (_spawnQueue.isEmpty) {
       _spawnQueue.add(present[_rng.nextInt(present.length)]);
       _spawnQueue.add(present[_rng.nextInt(present.length)]);
-    }else {
+    } else {
       _spawnQueue.add(present[_rng.nextInt(present.length)]);
     }
     // return _spawnQueue[0];
     return _spawnQueue;
   }
 
-  void removeProjectile(){
-    if(_spawnQueue.isNotEmpty){
+  void removeProjectile() {
+    if (_spawnQueue.isNotEmpty) {
       _spawnQueue.removeAt(0);
     }
   }
@@ -320,26 +319,19 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
       if (bub != null) {
         // Optional: animate falling; for now, recycle
         // pool.release(bub);
-        game.add(FallingBubbles(
-          bubble: bub,
-          pool: pool,
-          speed: 350,
-        ));
+        game.add(FallingBubbles(bubble: bub, pool: pool, speed: 350));
       }
     }
   }
-  
+
   Future<void> destroyGrids(BubblePool pool) async {
     for (final entry in _cells.entries) {
       final bub = entry.value;
       // bub.removeFromParent();
       // showing pop effects
-      await game.add(FallingBubbles(
-        bubble: bub,
-        pool: pool,
-        speed: 350,
-        points: 0
-      ));
+      await game.add(
+        FallingBubbles(bubble: bub, pool: pool, speed: 350, points: 0),
+      );
       // await Future.delayed(20.milliseconds);
     }
     _cells.clear();

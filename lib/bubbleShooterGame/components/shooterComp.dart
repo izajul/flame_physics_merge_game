@@ -87,7 +87,6 @@ class Shooter extends PositionComponent
 
     final mover = _MovingBubble(bubble: b, grid: grid, pool: pool, speed: v);
     game.add(mover);
-    game.oneShotFired();
 
     grid.removeProjectile();
     _nextProjectile?.removeFromParent();
@@ -202,7 +201,7 @@ class TrajectoryDots extends PositionComponent {
 // ... (The _MovingBubble class remains the same)
 /// Wraps a Bubble with simple movement, wall bounces, and settle logic.
 /// When it touches a settled bubble (or ceiling), it snaps to grid and triggers match checks.
-class _MovingBubble extends Component with HasGameReference {
+class _MovingBubble extends Component with HasGameReference<BubbleShooterGame> {
   _MovingBubble({
     required this.bubble,
     required this.grid,
@@ -275,6 +274,7 @@ class _MovingBubble extends Component with HasGameReference {
     grid.place(bubble);
     grid.resolveAfterPlacement(bubble, pool); // implement: cluster pop + drops
 
+    game.oneShotFired();
     // This mover is done
     removeFromParent();
   }

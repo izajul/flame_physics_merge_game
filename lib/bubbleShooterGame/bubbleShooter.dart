@@ -22,7 +22,7 @@ class BubbleShooterGame extends FlameGame
   int _shotsSinceAdvance = 0;
   bool _gameOver = false;
 
-  double get lossLineY => size.y- shooter.muzzleOffset; // shooter line
+  double get lossLineY => size.y- shooter.muzzleOffset*2; // shooter line
 
   @override
   Future<void> onLoad() async {

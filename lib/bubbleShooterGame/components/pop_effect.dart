@@ -12,7 +12,7 @@ class BubblePopEffect extends PositionComponent {
   BubblePopEffect({
     required super.position,
     required this.color,
-  });
+  }):super(priority: 50);
 
   @override
   Future<void> onLoad() async {
