@@ -48,22 +48,25 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
   /// Cached RNG for spawn biasing/fallback.
   final math.Random _rng;
 
+  double yOrigin = 0; // increases when rows advance downward
+
   // ---------------------------
   // Coordinates
   // ---------------------------
 
-  /// Convert (col,row) to world center position.
   Vector2 toWorld(int col, int row) {
     final double baseX = cellRadius + (row.isOdd ? cellRadius : 0.0);
     final double x = baseX + col * w;
-    final double y = topY + cellRadius + row * v;
+    // ⬇️ note the + yOrigin
+    final double y = topY + cellRadius + row * v + yOrigin;
     return Vector2(x, y);
   }
 
   /// Nearest grid cell for a world position (best-effort snapping).
   Point<int> snapToCell(Vector2 worldPos) {
+    // ⬇️ subtract yOrigin so we map to absolute row ids (can be negative)
     // Initial row guess
-    final double ry = (worldPos.y - (topY + cellRadius)) / v;
+    final double ry = (worldPos.y - (topY + cellRadius) - yOrigin) / v;
     int row = ry.round().clamp(0, 1000000);
 
     // Initial col guess with row parity offset
@@ -98,14 +101,15 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
 
   /// Returns whether any settled bubble center is within (cellRadius + threshold)
   /// of point [p]. The caller typically passes ~1.02 * cellRadius.
+
   bool isNearSettledCenter(Vector2 p, double threshold) {
     final double limit = cellRadius + threshold;
     final double limit2 = limit * limit;
 
-    // Compute row range to inspect
-    final double ry = (p.y - (topY + cellRadius)) / v;
-    final int r0 = math.max(0, ry.floor() - 2);
-    final int r1 = math.max(0, ry.ceil() + 2);
+    // ⬇️ subtract yOrigin so row estimates match absolute row ids
+    final double ry = (p.y - (topY + cellRadius) - yOrigin) / v;
+    final int r0 = ry.floor() - 2; // no clamp to 0
+    final int r1 = ry.ceil() + 2;
 
     for (int row = r0; row <= r1; row++) {
       final double baseX = cellRadius + (row.isOdd ? cellRadius : 0.0);
@@ -289,9 +293,11 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
     final anchored = <Point<int>>{};
     final q = <Point<int>>[];
 
+    final int ceilingRow = _currentTopRowId(); // ⬅️ instead of hardcoding 0
+
     // Enqueue all occupied cells in row 0
     for (final entry in _cells.entries) {
-      if (entry.key.y == 0) q.add(entry.key);
+      if (entry.key.y == ceilingRow) q.add(entry.key);
     }
 
     while (q.isNotEmpty) {
@@ -369,37 +375,55 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
 
   /// Push all rows down by [steps] (usually 1), then spawn a fresh row at row 0.
   /// Returns true if this push caused game over (crossed loss line).
+  /// Push visually by shifting yOrigin; do NOT change existing row/col.
+  /// Then spawn a fresh row *above* the current topmost row.
   bool advanceRows(int steps, BubblePool pool, {double? lossLineY}) {
-    if (steps <= 0 || _cells.isEmpty) {
-      // still spawn a new top row even if board is empty (game design choice)
-      _spawnTopRow(pool);
+    if (steps <= 0) {
       if (lossLineY != null && hasReachedLossLine(lossLineY)) return true;
       return false;
     }
 
     for (int s = 0; s < steps; s++) {
-      // 1) shift all cells down (+1 row)
-      final moved = <Point<int>, Bubble>{};
-      for (final entry in _cells.entries) {
-        final old = entry.key;
-        final b = entry.value;
-        final next = Point<int>(old.x, old.y + 1);
-        b.row = next.y;
-        b.col = next.x;
-        b.position = toWorld(b.col, b.row);
-        moved[next] = b;
-      }
-      _cells
-        ..clear()
-        ..addAll(moved);
+      // 1) shift the virtual origin (everything moves down)
+      yOrigin += v;
 
-      // 2) spawn new top row at row 0
-      _spawnTopRow(pool);
+      // 2) re-position existing bubbles to reflect new origin
+      for (final entry in _cells.entries) {
+        final b = entry.value;
+        b.position = toWorld(b.col, b.row);
+      }
+
+      // 3) spawn a new top row above current topmost
+      final int top = _currentTopRowId();
+      _spawnRowAt(top - 1, pool);
     }
 
-    // 3) after push, check loss
     if (lossLineY != null && hasReachedLossLine(lossLineY)) return true;
     return false;
+  }
+
+  int _currentTopRowId() {
+    if (_cells.isEmpty) return 0;
+    int minRow = _cells.keys.first.y;
+    for (final p in _cells.keys) {
+      if (p.y < minRow) minRow = p.y;
+    }
+    return minRow;
+  }
+
+  void _spawnRowAt(int row, BubblePool pool) {
+    final int cols = _countFittableColsForRow(row);
+    for (int col = 0; col < cols; col++) {
+      final item = _randomAnyColor(); // or your biased nextSpawnColor()
+      final b = pool.get(item)
+        ..settled = true
+        ..row = row
+        ..col = col
+        ..priority = 30
+        ..position = toWorld(col, row);
+      game.add(b);
+      _cells[Point(col, row)] = b;
+    }
   }
 
   void _spawnTopRow(BubblePool pool) {
