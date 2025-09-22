@@ -1,12 +1,11 @@
 import 'dart:ui';
+import 'package:flame_physics/bubbleShooterGame/bubbleShooter.dart';
 import 'package:flutter/material.dart';
-
-import '../../merge_game.dart';
 
 class GameOverOverlay extends StatelessWidget {
   const GameOverOverlay({super.key, required this.game});
 
-  final MergeGame game;
+  final BubbleShooterGame game;
 
   @override
   Widget build(BuildContext context) {

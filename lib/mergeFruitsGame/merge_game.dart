@@ -292,6 +292,8 @@ class MergeGame extends Forge2DGame with DragCallbacks {
     // remove overlays immediately to show the game again
     overlays.remove(gameOverOverlayID);
 
+    _controller.score(0);
+
     _shimmerLine?.removeFromParent();
 
     // clear world bodies (fruits, bucket, etc.)

@@ -6,8 +6,8 @@ import 'components/dialogs/game_over.dart';
 import 'components/dropper_item.dart';
 import 'merge_game.dart';
 
-class GameScreen extends StatelessWidget {
-  GameScreen({super.key});
+class FruitsMergeGameScreen extends StatelessWidget {
+  FruitsMergeGameScreen({super.key});
 
   final _mergeController = Get.put(ControllerMerge());
 

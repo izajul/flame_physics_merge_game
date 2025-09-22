@@ -2,6 +2,9 @@ import 'dart:ui';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame_physics/bubbleShooterGame/components/bubbleComp.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import '../controllers/controller_bubbleShooter.dart';
 import 'components/gridComponent.dart';
 import 'components/imageCache.dart';
 import 'components/pool.dart';
@@ -14,15 +17,18 @@ class BubbleShooterGame extends FlameGame
   @override
   Color backgroundColor() => const Color(0xff191e23);
 
+  final _controller = Get.put(ControllerBubbleShooter());
+
   late final Grid grid; // hex grid manager
   late final Shooter shooter; // handles aim + fired bubble
   late final BubblePool pool; // object pooling
 
-  int scores = 0;
+  // int scores = 0;
   int _shotsSinceAdvance = 0;
-  bool _gameOver = false;
 
-  double get lossLineY => size.y- shooter.muzzleOffset*2; // shooter line
+  // bool _gameOver = false;
+
+  double get lossLineY => size.y - shooter.muzzleOffset * 2; // shooter line
 
   @override
   Future<void> onLoad() async {
@@ -72,17 +78,17 @@ class BubbleShooterGame extends FlameGame
     );
 
     /// the points = 0 mean all bubbles are popping after game over
-    if(points == 0) {
+    if (points == 0) {
       return;
     }
     // 3. Add the score pop-up at the bubble's position
     add(ScorePopup(points: points, position: bub.position));
-    scores += points;
+    _controller.scores.value += points;
   }
 
   void oneShotFired() async {
-    print("_shotsSinceAdvance: $_shotsSinceAdvance,_gameOver:$_gameOver ");
-    if (_gameOver) return;
+    // print("_shotsSinceAdvance: $_shotsSinceAdvance,_gameOver:$_gameOver ");
+    if (_controller.isGameOver.value) return;
 
     _shotsSinceAdvance++;
     if (_shotsSinceAdvance >= 3) {
@@ -96,16 +102,28 @@ class BubbleShooterGame extends FlameGame
 
   void gameOver() async {
     print("gameOver");
-    if (_gameOver) return;
-    _gameOver = true;
+    if (_controller.isGameOver.value) return;
+    _controller.isGameOver.value = true;
 
     // Stop input by removing/pausing Shooter (pick one):
     await shooter.destroy();
 
-    grid.destroyGrids(pool);
+    await grid.destroyGrids(pool);
     // or: pauseEngine();
+    await Future.delayed(3.seconds);
 
     // TODO: show overlay / restart button, sound, etc.
-    // overlays.add('GameOverMenu');
+    overlays.add('GameOverMenu');
+  }
+
+  Future<void> restartGame() async {
+    print("restartGame");
+    // removing overlays
+    overlays.remove('GameOverMenu');
+    _controller.isGameOver.value = false;
+    _controller.scores.value = 0;
+    _shotsSinceAdvance = 0;
+
+
   }
 }
