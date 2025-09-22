@@ -4,14 +4,13 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/particles.dart';
 import 'package:flame_forge2d/flame_forge2d.dart' hide Particle;
-import 'package:flame_physics/mergeCcomponents/dropper_item.dart';
-import 'package:flame_physics/mergeCcomponents/boundary.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'controllers/controller_merge.dart';
-import 'mergeCcomponents/game_over_line.dart';
-import 'mergeCcomponents/particals/repeating_scaling.dart';
-import 'mergeCcomponents/shimmer_line.dart';
+import '../controllers/controller_merge.dart';
+import 'components/boundary.dart';
+import 'components/dropper_item.dart';
+import 'components/game_over_line.dart';
+import 'components/shimmer_line.dart';
 
 class MergeGame extends Forge2DGame with DragCallbacks {
   static const double kWorldW = 300;
@@ -103,7 +102,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   bool _isDropping = false;
 
-  int? _activePointer;      // which finger is controlling the preview
+  int? _activePointer; // which finger is controlling the preview
 
   @override
   void onDragStart(DragStartEvent event) async {
@@ -156,7 +155,7 @@ class MergeGame extends Forge2DGame with DragCallbacks {
 
   @override
   void onDragEnd(DragEndEvent event) async {
-    if (_activePointer != event.pointerId) return;        // ignore non-owner ends
+    if (_activePointer != event.pointerId) return; // ignore non-owner ends
 
     if (itemReadyToDrop != null &&
         itemReadyToDrop!.body.bodyType != BodyType.dynamic) {

@@ -8,7 +8,6 @@ import 'package:flame/extensions.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
-import '../merge_game.dart';
 import 'dropper_item.dart';
 
 /// Horizontal sensor line that ends the game when touched by a fruit.

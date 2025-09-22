@@ -3,9 +3,9 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
-import 'package:flame_physics/mergeCcomponents/body_with_data_component.dart';
-import 'package:flame_physics/merge_game.dart';
-import 'package:flutter/material.dart';
+import 'package:flame_physics/mergeFruitsGame/components/body_with_data_component.dart';
+
+import '../merge_game.dart';
 
 enum FruitItem {
   item_1(itemSize: 2.0, fruitNumber: 1),

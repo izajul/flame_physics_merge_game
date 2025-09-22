@@ -1,7 +1,8 @@
 
 import 'package:get/get.dart';
 
-import '../mergeCcomponents/dropper_item.dart';
+import '../mergeFruitsGame/components/dropper_item.dart';
+
 
 
 class ControllerMerge extends GetxController{
