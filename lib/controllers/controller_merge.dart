@@ -11,5 +11,10 @@ class ControllerMerge extends GetxController{
   final isGameOver = false.obs;
 
 
+  void reset(){
+    score.value = 0;
+    isGameOver.value = false;
+    fruitQueue.clear();
+  }
 
 }

@@ -9,7 +9,7 @@ import 'merge_game.dart';
 class FruitsMergeGameScreen extends StatelessWidget {
   FruitsMergeGameScreen({super.key});
 
-  final _mergeController = Get.put(ControllerMerge());
+  final _mergeController = Get.put(ControllerMerge())..reset();
 
   final game = GameWidget<MergeGame>.controlled(
     gameFactory: MergeGame.new,

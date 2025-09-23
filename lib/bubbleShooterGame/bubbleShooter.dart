@@ -19,51 +19,42 @@ class BubbleShooterGame extends FlameGame
 
   final _controller = Get.put(ControllerBubbleShooter());
 
-  late final Grid grid; // hex grid manager
-  late final Shooter shooter; // handles aim + fired bubble
-  late final BubblePool pool; // object pooling
+  late Grid? grid; // hex grid manager
+  late Shooter? shooter; // handles aim + fired bubble
+  late BubblePool? pool; // object pooling
 
   // int scores = 0;
   int _shotsSinceAdvance = 0;
 
   // bool _gameOver = false;
 
-  double get lossLineY => size.y - shooter.muzzleOffset * 2; // shooter line
+  double get lossLineY => size.y - (shooter?.muzzleOffset ?? 0) * 2; // shooter line
 
   @override
   Future<void> onLoad() async {
     await ImagesCache.instance.preload();
 
-    grid = Grid(cellRadius: 16, topY: 0); // add a topY field in Grid
-    add(grid);
-
-    pool = BubblePool(grid: grid);
-
-    shooter = Shooter(grid: grid, pool: pool);
-    add(shooter);
-
-    // (Optional) seed a starter ceiling of settled bubbles)
-    grid.seedInitialRows(pool);
+   await _initGame();
   }
 
   // Handle aiming when the user drags their finger
   @override
   void onDragUpdate(DragUpdateEvent event) {
-    shooter.aimToward(event.deviceStartPosition);
+    shooter?.aimToward(event.deviceStartPosition);
   }
 
   // Handle firing when the user lifts their finger
   @override
   void onDragEnd(DragEndEvent event) {
     super.onDragEnd(event);
-    shooter.fire();
+    shooter?.fire();
   }
 
   // Also allow tap-to-aim-and-fire
   @override
   void onTapUp(TapUpEvent event) {
-    shooter.aimToward(event.devicePosition);
-    shooter.fire();
+    shooter?.aimToward(event.devicePosition);
+    shooter?.fire();
   }
 
   Future<void> showPopEffect(Bubble bub, {int points = 20}) async {
@@ -93,7 +84,7 @@ class BubbleShooterGame extends FlameGame
     _shotsSinceAdvance++;
     if (_shotsSinceAdvance >= 3) {
       _shotsSinceAdvance = 0;
-      final lost = grid.advanceRows(1, pool, lossLineY: lossLineY);
+      final lost = grid?.advanceRows(1, pool!, lossLineY: lossLineY) ?? false;
       if (lost) {
         gameOver();
       }
@@ -106,13 +97,18 @@ class BubbleShooterGame extends FlameGame
     _controller.isGameOver.value = true;
 
     // Stop input by removing/pausing Shooter (pick one):
-    await shooter.destroy();
+    await shooter?.destroy();
 
-    await grid.destroyGrids(pool);
+    await grid?.destroyGrids(pool!);
     // or: pauseEngine();
     await Future.delayed(3.seconds);
 
-    // TODO: show overlay / restart button, sound, etc.
+    shooter = null;
+    grid = null;
+    pool = null;
+
+    _controller.reset();
+
     overlays.add('GameOverMenu');
   }
 
@@ -120,10 +116,22 @@ class BubbleShooterGame extends FlameGame
     print("restartGame");
     // removing overlays
     overlays.remove('GameOverMenu');
-    _controller.isGameOver.value = false;
-    _controller.scores.value = 0;
     _shotsSinceAdvance = 0;
 
 
+    await _initGame();
+  }
+
+  Future<void> _initGame() async {
+    grid = Grid(cellRadius: 16, topY: 0); // add a topY field in Grid
+    add(grid!);
+
+    pool = BubblePool(grid: grid!);
+
+    shooter = Shooter(grid: grid!, pool: pool!);
+    add(shooter!);
+
+    // (Optional) seed a starter ceiling of settled bubbles)
+    grid?.seedInitialRows(pool!);
   }
 }

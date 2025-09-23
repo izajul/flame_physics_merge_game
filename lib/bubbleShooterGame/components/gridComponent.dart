@@ -341,6 +341,8 @@ class Grid extends Component with HasGameReference<BubbleShooterGame> {
       // await Future.delayed(20.milliseconds);
     }
     _cells.clear();
+
+    removeFromParent();
   }
 
   int _countFittableColsForRow(int row) {
